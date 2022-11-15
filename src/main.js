@@ -26,7 +26,7 @@ async function execute() {
     const {repo, owner, gitHubSecret, level, fallbackTag, buildNumber, prNumber, disableInform} = getAndValidateInput()
 
     // -- Action
-    const tag = getLastTag(gitHubSecret, repo, owner, fallbackTag)
+    const tag = getLastTag(gitHubSecret, owner, repo, fallbackTag)
 
     if (!tag) throw new Error('No tag found in repository, and no fallback tag provided.')
     if (!semver.valid(tag)) throw new Error(`${tag} is not a valid version`)
@@ -37,7 +37,7 @@ async function execute() {
 
     if (!disableInform) {
         console.log(`Commenting on the PR to inform user about minor and major labels.`)
-        await upsertComment(gitHubSecret, repo, owner, prNumber)
+        await upsertComment(gitHubSecret, owner, repo, prNumber)
     }
 
     // -- Output
@@ -98,7 +98,7 @@ async function getLastTag(gitHubSecret, owner, repo, fallbackTag) {
     }
 }
 
-async function upsertComment(gitHubSecret, repo, owner, prNumber) {
+async function upsertComment(gitHubSecret, owner, repo, prNumber) {
     const octokit = github.getOctokit(gitHubSecret)
 
     let comment = undefined;
