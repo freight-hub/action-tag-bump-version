@@ -12866,7 +12866,7 @@ async function run() {
 
 async function execute() {
     // -- Input
-    const { repo, owner, gitHubSecret, fallbackTag, buildNumber, prNumber, disableInform } = getAndValidateInput()
+    const {repo, owner, gitHubSecret, fallbackTag, buildNumber, prNumber, disableInform} = getAndValidateInput()
 
     // -- Action
     const level = await getAndValidateLevel(gitHubSecret, owner, repo, prNumber)
@@ -12891,12 +12891,12 @@ async function execute() {
 }
 
 function getAndValidateInput() {
-    const gitHubSecret = core.getInput('github_secret', { required: true })
+    const gitHubSecret = core.getInput('github_secret', {required: true})
     if (!gitHubSecret) throw new Error(`No github secret found`)
 
-    const fallbackTag = core.getInput('fallback_tag', { required: false })
-    let buildNumber = core.getInput('build_number', { required: false }) ?? 0
-    let disableInform = core.getInput('disable_inform', { required: false }) === 'true'
+    const fallbackTag = core.getInput('fallback_tag', {required: false})
+    let buildNumber = core.getInput('build_number', {required: false}) ?? 0
+    let disableInform = core.getInput('disable_inform', {required: false}) === 'true'
 
     const repo = github.context.repo
     const prNumber = github.context.payload.pull_request?.number
@@ -12970,11 +12970,15 @@ async function getLabelsForPullRequest(gitHubSecret, owner, repo, prNumber) {
         }
 
         const prResponse = await octokit.rest.pulls.get(request)
-        console.log(prResponse)
 
         if (prResponse.data) {
-            console.log(prResponse.data)
-            return prNumber.data?.labels.map((l) => l.name) ?? []
+            const labels = []
+
+            prNumber.data.labels.for(l => {
+                labels.push(l.name)
+            })
+
+            return labels
         }
         return []
     } catch (e) {
@@ -12986,7 +12990,7 @@ async function upsertComment(gitHubSecret, owner, repo, prNumber, oldVersion, ne
     const octokit = github.getOctokit(gitHubSecret)
 
     let comment = undefined
-    for await (const { data: comments } of octokit.paginate.iterator(octokit.rest.issues.listComments, {
+    for await (const {data: comments} of octokit.paginate.iterator(octokit.rest.issues.listComments, {
         owner,
         repo,
         issue_number: prNumber,
