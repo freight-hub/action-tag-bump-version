@@ -12972,13 +12972,7 @@ async function getLabelsForPullRequest(gitHubSecret, owner, repo, prNumber) {
         const prResponse = await octokit.rest.pulls.get(request)
 
         if (prResponse.data) {
-            const labels = []
-
-            prNumber.data.labels.for(l => {
-                labels.push(l.name)
-            })
-
-            return labels
+            return prResponse.data.labels.map(l => l.name)
         }
         return []
     } catch (e) {
