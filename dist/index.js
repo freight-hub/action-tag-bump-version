@@ -12881,10 +12881,10 @@ async function execute() {
 }
 
 function getAndValidateInput() {
-    const gitHubSecret = core.getInput("github_secret")
+    const gitHubSecret = core.getInput("github_secret", {required: true})
     if (!gitHubSecret) throw new Error(`No github secret found`)
 
-    const level = core.getInput("level")
+    const level = core.getInput("level", {required: true})
     if (validLevels.indexOf(level) === -1) throw new Error(`Not a valid level. Must be one of: ${validLevels.join(", ")}`)
 
     const fallbackTag = core.getInput("fallback_tag", {required: false})

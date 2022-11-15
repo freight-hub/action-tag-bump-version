@@ -13,6 +13,9 @@ inputs:
   fallback_tag:
     description: 'If supplied and no tags are found, we will use this version'
     required: false
+  disable_inform:
+    description: 'If set to true, we will not post a message on the PR'
+    required: false
 outputs:
   old_version:
     description: 'The current latest tag of the repository'
