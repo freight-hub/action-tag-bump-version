@@ -12837,6 +12837,11 @@ const semver = __nccwpck_require__(1383);
 
 const validLevels = ['major', 'minor', 'patch']
 
+const message = `Thank you for contributing to this repository!
+If you would like to bump the version more than just a patch, use the 'minor' or 'major' label`
+const message_includes = `Thank you for contributing to this repository`
+
+
 async function run() {
     try {
         // todo @lennart: See if we can get the labels from the context
@@ -12849,9 +12854,9 @@ async function run() {
     }
 }
 
-function execute() {
+async function execute() {
     // -- Input
-    const {repo, owner, gitHubSecret, level, fallbackTag, buildNumber} = getAndValidateInput()
+    const {repo, owner, gitHubSecret, level, fallbackTag, buildNumber, prNumber, disableInform} = getAndValidateInput()
 
     // -- Action
     const tag = getLastTag(gitHubSecret, repo, owner, fallbackTag)
@@ -12862,6 +12867,11 @@ function execute() {
     const newVersion = semver.inc(tag, level)
     const preReleaseVersion = `${newVersion}-alpha.${buildNumber}`
     console.log(`Incremented ${tag} with level ${level} to ${newVersion}, alpha: ${preReleaseVersion}`)
+
+    if (!disableInform) {
+        console.log(`Commenting on the PR to inform user about minor and major labels.`)
+        await upsertComment(gitHubSecret, repo, owner, prNumber)
+    }
 
     // -- Output
     core.setOutput("old_version", tag)
@@ -12879,8 +12889,10 @@ function getAndValidateInput() {
 
     const fallbackTag = core.getInput("fallback_tag", {required: false})
     let buildNumber = core.getInput("build_number", {required: false}) ?? 0
+    let disableInform = core.getInput("disable_inform", {required: false}) === 'true'
 
     const repo = github.context.repo;
+    const prNumber = github.context.payload.pull_request?.number;
 
     return {
         owner: repo.owner,
@@ -12888,7 +12900,9 @@ function getAndValidateInput() {
         gitHubSecret,
         level,
         fallbackTag,
-        buildNumber
+        buildNumber,
+        prNumber,
+        disableInform
     }
 }
 
@@ -12914,6 +12928,36 @@ async function getLastTag(gitHubSecret, owner, repo, fallbackTag) {
         }
     } catch (e) {
         throw new Error(`could not create release: ${e.message}`)
+    }
+}
+
+async function upsertComment(gitHubSecret, repo, owner, prNumber) {
+    const octokit = github.getOctokit(gitHubSecret)
+
+    let comment = undefined;
+    for await (const {data: comments} of octokit.paginate.iterator(octokit.rest.issues.listComments, {
+        owner,
+        repo,
+        issue_number: prNumber,
+    })) {
+        comment = comments.find((comment) => comment?.body?.includes(message_includes));
+        if (comment) break;
+    }
+
+    if (comment) {
+        await octokit.rest.issues.updateComment({
+            repo,
+            owner,
+            comment_id: comment.id,
+            body: message,
+        });
+    } else {
+        await octokit.rest.issues.createComment({
+            repo,
+            owner,
+            issue_number: prNumber,
+            body: message,
+        });
     }
 }
 
