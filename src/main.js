@@ -1,23 +1,23 @@
-const github = require("@actions/github");
-const core = require("@actions/core");
-const semver = require("semver");
+const github = require('@actions/github')
+const core = require('@actions/core')
+const semver = require('semver')
 
 const validLevels = ['major', 'minor', 'patch']
 
 const preMessageLines = [
     '# Bumping Minor or Major versions',
     'Thank you for contributing to this repository!',
-    'If you would like to bump the version more than just a patch, use the \'minor\' or \'major\' label.',
+    "If you would like to bump the version more than just a patch, use the 'minor' or 'major' label.",
     '# Release Plan',
     '| Previous version | New version | Pre-release version',
-    '|--|--|--|'
+    '|--|--|--|',
 ]
 
 const postMessageLines = [
     '# What will happen?',
     'The pacakge.json will be updated to the NEXT stable version (provided by labels)',
     'Please use the Pre-release version to test out any functionality.',
-    'Once this PR is merged, a release will be created with the NEXT version ready for your services to consume!'
+    'Once this PR is merged, a release will be created with the NEXT version ready for your services to consume!',
 ]
 
 // Used to match the message that was already created so we don't post multiple times
@@ -25,21 +25,18 @@ const message_includes = preMessageLines[0]
 
 async function run() {
     try {
-        // todo @lennart: See if we can get the labels from the context
-        console.log(github.context)
-
-        await execute();
-    } catch
-        (error) {
-        core.setFailed(error.message);
+        await execute()
+    } catch (error) {
+        core.setFailed(error.message)
     }
 }
 
 async function execute() {
     // -- Input
-    const {repo, owner, gitHubSecret, level, fallbackTag, buildNumber, prNumber, disableInform} = getAndValidateInput()
+    const { repo, owner, gitHubSecret, fallbackTag, buildNumber, prNumber, disableInform } = getAndValidateInput()
 
     // -- Action
+    const level = await getAndValidateLevel(gitHubSecret, owner, repo, prNumber)
     const tag = await getLastTag(gitHubSecret, owner, repo, fallbackTag)
 
     if (!tag) throw new Error('No tag found in repository, and no fallback tag provided.')
@@ -51,40 +48,57 @@ async function execute() {
 
     if (!disableInform) {
         console.log(`Commenting on the PR to inform user about minor and major labels.`)
-        await upsertComment(gitHubSecret, owner, repo, prNumber)
+        await upsertComment(gitHubSecret, owner, repo, prNumber, tag, newVersion, preReleaseVersion)
     }
 
     // -- Output
-    core.setOutput("old_version", tag)
-    core.setOutput("new_version", newVersion)
-    core.setOutput("pre_release_version", preReleaseVersion)
-
+    core.setOutput('old_version', tag)
+    core.setOutput('new_version', newVersion)
+    core.setOutput('pre_release_version', preReleaseVersion)
 }
 
 function getAndValidateInput() {
-    const gitHubSecret = core.getInput("github_secret", {required: true})
+    const gitHubSecret = core.getInput('github_secret', { required: true })
     if (!gitHubSecret) throw new Error(`No github secret found`)
 
-    const level = core.getInput("level", {required: true})
-    if (validLevels.indexOf(level) === -1) throw new Error(`Not a valid level. Must be one of: ${validLevels.join(", ")}`)
+    const fallbackTag = core.getInput('fallback_tag', { required: false })
+    let buildNumber = core.getInput('build_number', { required: false }) ?? 0
+    let disableInform = core.getInput('disable_inform', { required: false }) === 'true'
 
-    const fallbackTag = core.getInput("fallback_tag", {required: false})
-    let buildNumber = core.getInput("build_number", {required: false}) ?? 0
-    let disableInform = core.getInput("disable_inform", {required: false}) === 'true'
-
-    const repo = github.context.repo;
-    const prNumber = github.context.payload.pull_request?.number;
+    const repo = github.context.repo
+    const prNumber = github.context.payload.pull_request?.number
 
     return {
         owner: repo.owner,
         repo: repo.repo,
         gitHubSecret,
-        level,
         fallbackTag,
         buildNumber,
         prNumber,
-        disableInform
+        disableInform,
     }
+}
+
+async function getAndValidateLevel(gitHubSecret, owner, repo, prNumber) {
+    let level = 'patch'
+
+    const labels = await getLabelsForPullRequest(gitHubSecret, owner, repo, prNumber)
+    console.log(`labels: ${labels.join(', ')}`)
+
+    if (labels.length === 1) {
+        level = labels[0]
+    } else if (labels.length > 0) {
+        validLevels.forEach((validLevel, idx) => {
+            if (labels.indexOf(validLevel) > -1) {
+                level = labels[idx]
+            }
+        })
+    }
+
+    if (validLevels.indexOf(labels[0]) === -1) {
+        throw new Error(`Label is not a valid semVer inc. must be one of ${validLevels.join(', ')}`)
+    }
+    return level
 }
 
 async function getLastTag(gitHubSecret, owner, repo, fallbackTag) {
@@ -95,10 +109,10 @@ async function getLastTag(gitHubSecret, owner, repo, fallbackTag) {
             owner,
             repo,
             per_page: 1,
-            page: 1
-        };
+            page: 1,
+        }
 
-        const tagResponse = await octokit.rest.repos.listTags(request);
+        const tagResponse = await octokit.rest.repos.listTags(request)
 
         if (tagResponse.data?.length > 0) {
             console.log(`Using latest tag from repository: ${tagResponse.data[0].name}`)
@@ -112,25 +126,42 @@ async function getLastTag(gitHubSecret, owner, repo, fallbackTag) {
     }
 }
 
+async function getLabelsForPullRequest(gitHubSecret, owner, repo, prNumber) {
+    const octokit = github.getOctokit(gitHubSecret)
+
+    try {
+        const request = {
+            owner,
+            repo,
+            pull_number: prNumber,
+        }
+
+        const prResponse = await octokit.rest.pulls.get(request)
+
+        if (prResponse.data) {
+            return prNumber.data.labels.map((l) => l.name)
+        }
+    } catch (e) {
+        throw new Error(`could not fetch PR: ${e.message}`)
+    }
+}
+
 async function upsertComment(gitHubSecret, owner, repo, prNumber, oldVersion, newVersion, preReleaseVersion) {
     const octokit = github.getOctokit(gitHubSecret)
 
-    let comment = undefined;
-    for await (const {data: comments} of octokit.paginate.iterator(octokit.rest.issues.listComments, {
+    let comment = undefined
+    for await (const { data: comments } of octokit.paginate.iterator(octokit.rest.issues.listComments, {
         owner,
         repo,
         issue_number: prNumber,
     })) {
-        comment = comments.find((comment) => comment?.body?.includes(message_includes));
-        if (comment) break;
+        comment = comments.find((comment) => comment?.body?.includes(message_includes))
+        if (comment) break
     }
 
     let messageLines = [`|${oldVersion}|${newVersion}|${preReleaseVersion}|`, '']
 
-    let message = preMessageLines
-        .concat(messageLines)
-        .concat(postMessageLines)
-        .join("\n")
+    let message = preMessageLines.concat(messageLines).concat(postMessageLines).join('\n')
 
     if (comment) {
         await octokit.rest.issues.updateComment({
@@ -138,17 +169,17 @@ async function upsertComment(gitHubSecret, owner, repo, prNumber, oldVersion, ne
             owner,
             comment_id: comment.id,
             body: message,
-        });
+        })
     } else {
         await octokit.rest.issues.createComment({
             repo,
             owner,
             issue_number: prNumber,
             body: message,
-        });
+        })
     }
 }
 
-(async () => {
-    await run();
-})();
+;(async () => {
+    await run()
+})()
