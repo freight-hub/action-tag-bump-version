@@ -137,10 +137,13 @@ async function getLabelsForPullRequest(gitHubSecret, owner, repo, prNumber) {
         }
 
         const prResponse = await octokit.rest.pulls.get(request)
+        console.log(prResponse)
 
         if (prResponse.data) {
-            return prNumber.data.labels.map((l) => l.name)
+            console.log(prResponse.data)
+            return prNumber.data?.labels.map((l) => l.name) ?? []
         }
+        return []
     } catch (e) {
         throw new Error(`could not fetch PR: ${e.message}`)
     }
