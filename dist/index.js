@@ -12859,7 +12859,7 @@ async function execute() {
     const {repo, owner, gitHubSecret, level, fallbackTag, buildNumber, prNumber, disableInform} = getAndValidateInput()
 
     // -- Action
-    const tag = getLastTag(gitHubSecret, owner, repo, fallbackTag)
+    const tag = await getLastTag(gitHubSecret, owner, repo, fallbackTag)
 
     if (!tag) throw new Error('No tag found in repository, and no fallback tag provided.')
     if (!semver.valid(tag)) throw new Error(`${tag} is not a valid version`)
