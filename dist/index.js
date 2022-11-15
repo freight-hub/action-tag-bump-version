@@ -12837,10 +12837,24 @@ const semver = __nccwpck_require__(1383);
 
 const validLevels = ['major', 'minor', 'patch']
 
-const message = `Thank you for contributing to this repository!
-If you would like to bump the version more than just a patch, use the 'minor' or 'major' label`
-const message_includes = `Thank you for contributing to this repository`
+const preMessageLines = [
+    '# Bumping Minor or Major versions',
+    'Thank you for contributing to this repository!',
+    'If you would like to bump the version more than just a patch, use the \'minor\' or \'major\' label.',
+    '# Release Plan',
+    '| Previous version | New version | Pre-release version',
+    '|--|--|--|'
+]
 
+const postMessageLines = [
+    '# What will happen?',
+    'The pacakge.json will be updated to the NEXT stable version (provided by labels)',
+    'Please use the Pre-release version to test out any functionality.',
+    'Once this PR is merged, a release will be created with the NEXT version ready for your services to consume!'
+]
+
+// Used to match the message that was already created so we don't post multiple times
+const message_includes = preMessageLines[0]
 
 async function run() {
     try {
@@ -12931,7 +12945,7 @@ async function getLastTag(gitHubSecret, owner, repo, fallbackTag) {
     }
 }
 
-async function upsertComment(gitHubSecret, owner, repo, prNumber) {
+async function upsertComment(gitHubSecret, owner, repo, prNumber, oldVersion, newVersion, preReleaseVersion) {
     const octokit = github.getOctokit(gitHubSecret)
 
     let comment = undefined;
@@ -12943,6 +12957,13 @@ async function upsertComment(gitHubSecret, owner, repo, prNumber) {
         comment = comments.find((comment) => comment?.body?.includes(message_includes));
         if (comment) break;
     }
+
+    let messageLines = [`|${oldVersion}|${newVersion}|${preReleaseVersion}|`, '']
+
+    let message = preMessageLines
+        .concat(messageLines)
+        .concat(postMessageLines)
+        .join("\n")
 
     if (comment) {
         await octokit.rest.issues.updateComment({
@@ -12960,7 +12981,6 @@ async function upsertComment(gitHubSecret, owner, repo, prNumber) {
         });
     }
 }
-
 
 (async () => {
     await run();
