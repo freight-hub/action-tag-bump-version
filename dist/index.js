@@ -12866,13 +12866,13 @@ async function run() {
 
 async function execute() {
     // -- Input
-    const {repo, owner, gitHubSecret, fallbackTag, buildNumber, prNumber, disableInform} = getAndValidateInput()
+    const { repo, owner, gitHubSecret, fallbackTag, buildNumber, prNumber, disableInform } = getAndValidateInput()
 
     // -- Action
     const level = await getAndValidateLevel(gitHubSecret, owner, repo, prNumber)
     const tag = await getLastTag(gitHubSecret, owner, repo, fallbackTag)
 
-    if (!tag) throw new Error('No tag found in repository, and no fallback tag provided.')
+    if (!tag) throw new Error('No tag found in repository, and no fallback tag provided')
     if (!semver.valid(tag)) throw new Error(`${tag} is not a valid version`)
 
     const newVersion = semver.inc(tag, level)
@@ -12880,7 +12880,7 @@ async function execute() {
     console.log(`Incremented ${tag} with level ${level} to ${newVersion}, alpha: ${preReleaseVersion}`)
 
     if (!disableInform) {
-        console.log(`Commenting on the PR to inform user about minor and major labels.`)
+        console.log(`Commenting on the PR to inform user about minor and major labels`)
         await upsertComment(gitHubSecret, owner, repo, prNumber, tag, newVersion, preReleaseVersion)
     }
 
@@ -12891,12 +12891,12 @@ async function execute() {
 }
 
 function getAndValidateInput() {
-    const gitHubSecret = core.getInput('github_secret', {required: true})
+    const gitHubSecret = core.getInput('github_secret', { required: true })
     if (!gitHubSecret) throw new Error(`No github secret found`)
 
-    const fallbackTag = core.getInput('fallback_tag', {required: false})
-    let buildNumber = core.getInput('build_number', {required: false}) ?? 0
-    let disableInform = core.getInput('disable_inform', {required: false}) === 'true'
+    const fallbackTag = core.getInput('fallback_tag', { required: false })
+    let buildNumber = core.getInput('build_number', { required: false }) ?? 0
+    let disableInform = core.getInput('disable_inform', { required: false }) === 'true'
 
     const repo = github.context.repo
     const prNumber = github.context.payload.pull_request?.number
@@ -12913,24 +12913,29 @@ function getAndValidateInput() {
 }
 
 async function getAndValidateLevel(gitHubSecret, owner, repo, prNumber) {
-    let level = 'patch'
+    let level = null
 
     const labels = await getLabelsForPullRequest(gitHubSecret, owner, repo, prNumber)
-    console.log(`labels: ${labels.join(', ')}`)
 
     if (labels.length === 1) {
         level = labels[0]
+        console.log(`using ${level} from labels on repository`)
     } else if (labels.length > 0) {
         validLevels.forEach((validLevel, idx) => {
             if (labels.indexOf(validLevel) > -1) {
                 level = labels[idx]
+                console.log(`using ${level} from labels on repository`)
             }
         })
+    }
+    if (!level) {
+        console.log(`No label found, using 'patch' level`)
     }
 
     if (validLevels.indexOf(labels[0]) === -1) {
         throw new Error(`Label is not a valid semVer inc. must be one of ${validLevels.join(', ')}`)
     }
+
     return level
 }
 
@@ -12972,7 +12977,7 @@ async function getLabelsForPullRequest(gitHubSecret, owner, repo, prNumber) {
         const prResponse = await octokit.rest.pulls.get(request)
 
         if (prResponse.data) {
-            return prResponse.data.labels.map(l => l.name)
+            return prResponse.data.labels.map((l) => l.name)
         }
         return []
     } catch (e) {
@@ -12984,7 +12989,7 @@ async function upsertComment(gitHubSecret, owner, repo, prNumber, oldVersion, ne
     const octokit = github.getOctokit(gitHubSecret)
 
     let comment = undefined
-    for await (const {data: comments} of octokit.paginate.iterator(octokit.rest.issues.listComments, {
+    for await (const { data: comments } of octokit.paginate.iterator(octokit.rest.issues.listComments, {
         owner,
         repo,
         issue_number: prNumber,
