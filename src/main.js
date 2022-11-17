@@ -97,6 +97,7 @@ async function getAndValidateLevel(gitHubSecret, owner, repo, prNumber) {
     }
     if (!level) {
         console.log(`No label found, using 'patch' level`)
+        level = 'patch'
     }
 
     if (validLevels.indexOf(labels[0]) === -1) {
