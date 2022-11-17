@@ -12891,7 +12891,7 @@ async function execute() {
 }
 
 function getAndValidateInput() {
-    const gitHubSecret = core.getInput('github_secret', { required: true })
+    const gitHubSecret = core.getInput('token', { required: true })
     if (!gitHubSecret) throw new Error(`No github secret found`)
 
     const fallbackTag = core.getInput('fallback_tag', { required: false })

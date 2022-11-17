@@ -1,23 +1,23 @@
 name: 'Bump version from tag'
 description: 'Bumps a semver version from tag or fallback version'
 inputs:
-    github_secret:
-        description: 'Secret for github'
+    token:
+        description: 'Github token used by octokit (github API)'
         required: true
     build_number:
-        description: 'If supplied, we will build an output with this version number in the form of {version}-alpha.{build_number}, default is 0'
+        description: 'Optional: used to generate the pre_release_version as {version}-alpha.{build_number}. (Default: 0)'
         required: false
     fallback_tag:
-        description: 'If supplied and no tags are found, we will use this version'
+        description: 'Optional: used as fallback when no tag/release can be found on the repository.'
         required: false
     disable_inform:
-        description: 'If set to true, we will not post a message on the PR'
+        description: 'Disables the comment created by the script. (Default: false)'
         required: false
 outputs:
     old_version:
-        description: 'The current latest tag of the repository'
+        description: 'The latest tag found'
     new_version:
-        description: 'The new tag created by SemVer'
+        description: 'The next calculated version'
     pre_release_version:
         description: 'Pre release version built from {new_version}-alpha.{build_number}'
 runs:
