@@ -12933,8 +12933,8 @@ async function getAndValidateLevel(gitHubSecret, owner, repo, prNumber) {
         level = 'patch'
     }
 
-    if (validLevels.indexOf(labels[0]) === -1) {
-        throw new Error(`Label is not a valid semVer inc. must be one of ${validLevels.join(', ')}`)
+    if (validLevels.indexOf(level) === -1) {
+        throw new Error(`Label ${level} is not a valid semVer inc. must be one of ${validLevels.join(', ')}`)
     }
 
     return level
