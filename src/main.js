@@ -15,7 +15,7 @@ const preMessageLines = [
 
 const postMessageLines = [
     '# What will happen?',
-    'The pacakge.json will be updated to the NEXT stable version (provided by labels)',
+    'The package.json will be updated to the NEXT stable version (provided by labels)',
     'Please use the Pre-release version to test out any functionality.',
     'Once this PR is merged, a release will be created with the NEXT version ready for your services to consume!',
 ]
