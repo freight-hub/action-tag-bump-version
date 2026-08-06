@@ -39928,12 +39928,12 @@ async function getAndValidateLevel(gitHubSecret, owner, repo, prNumber) {
         level = labels[0]
         console.log(`using ${level} from labels on repository`)
     } else if (labels.length > 0) {
-        validLevels.forEach((validLevel, idx) => {
-            if (labels.indexOf(validLevel) > -1) {
-                level = labels[idx]
-                console.log(`using ${level} from labels on repository`)
+        for (const validLevel of validLevels) {
+            if (labels.includes(validLevel)) {
+                level = validLevel
+                console.log(`selected ${validLevel} from labels on PR`)
             }
-        })
+        }
     }
     if (!level) {
         console.log(`No label found, using 'patch' level`)
