@@ -181,7 +181,7 @@ __metadata:
     "@actions/github": "npm:^5.1.1"
     "@vercel/ncc": "npm:^0.34.0"
     prettier: "npm:^2.7.1"
-    semver: "npm:^7.3.8"
+    semver: "npm:^7.5.2"
   languageName: unknown
   linkType: soft
 
@@ -364,14 +364,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.3.8":
-  version: 7.3.8
-  resolution: "semver@npm:7.3.8"
+"semver@npm:^7.5.2":
+  version: 7.5.2
+  resolution: "semver@npm:7.5.2"
   dependencies:
     lru-cache: "npm:^6.0.0"
   bin:
     semver: bin/semver.js
-  checksum: 10c0/7e581d679530db31757301c2117721577a2bb36a301a443aac833b8efad372cda58e7f2a464fe4412ae1041cc1f63a6c1fe0ced8c57ce5aca1e0b57bb0d627b9
+  checksum: 10c0/d151207ab762a8067f6302076edc04e5b8da2362eb9e3f21c2567ceadfd415064936d215b4aae7791da118c230649d29089be979ffa49c5b56a6bcf82147efdd
   languageName: node
   linkType: hard
 
