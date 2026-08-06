@@ -10,6 +10,9 @@ updates:
       groups:
         dev-deps:
           dependency-type: development
+        actions:
+          patterns:
+          - "@actions/*"
 
     - package-ecosystem: github-actions
       directory: /
